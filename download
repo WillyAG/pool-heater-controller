@@ -1,0 +1,16 @@
+# Passwords: never upload
+secrets.h
+
+# KiCad backups, caches and per-user files
+*-backups/
+*.kicad_prl
+*.lck
+fp-info-cache
+_autosave-*
+*.bak
+
+# Arduino build output and OS clutter
+build/
+.DS_Store
+Thumbs.db
+desktop.ini

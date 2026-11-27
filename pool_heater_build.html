@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pool Heater Probe Override</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout: single reading column of numbered build sections, drawings full-width */
+  --ink: #16212e;
+  --paper: #f4f6f3;
+  --panel: #ffffff;
+  --rule: #cdd5d0;
+  --accent: #0b7a75;      /* pool teal */
+  --warn: #b5530f;
+  --muted: #5b6770;
+  --line: #16212e;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e4ebe8; --paper: #121a20; --panel: #1a242c; --rule: #2f3d46;
+    --accent: #4cc3b9; --warn: #f0954f; --muted: #9aa8b0; --line: #dbe4e0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #e4ebe8; --paper: #121a20; --panel: #1a242c; --rule: #2f3d46;
+  --accent: #4cc3b9; --warn: #f0954f; --muted: #9aa8b0; --line: #dbe4e0; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--font-body); }
+main { max-width: 1000px; margin: 0 auto; padding: 32px 20px 64px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+h1, h2 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(28px, 4.5vw, 40px); }
+h2 { font-size: 24px; display: flex; gap: 12px; align-items: baseline; }
+h2 .no { font-family: var(--font-mono); font-size: 14px; color: var(--accent); }
+h3 { font-size: 16px; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+section { display: grid; gap: 14px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.chip { border: 1px solid var(--rule); border-radius: 4px; padding: 2px 8px; background: var(--panel); }
+.chip.warn { border-color: var(--warn); color: var(--warn); }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; }
+.draw { overflow-x: auto; }
+.draw svg { display: block; width: 100%; min-width: 640px; height: auto; }
+.pb { background: transparent; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--font-display); font-size: 14px; letter-spacing: .02em; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+td.num { font-variant-numeric: tabular-nums; text-align: right; width: 3em; }
+.rc { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+code { font-family: var(--font-mono); font-size: 13px; }
+.muted { color: var(--muted); }
+.sw { display: inline-block; width: 18px; height: 6px; border-radius: 3px; margin-right: 8px; vertical-align: middle; }
+.state { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+.s-off { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.s-on { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.s-safe { background: color-mix(in srgb, var(--muted) 20%, transparent); color: var(--muted); }
+ol, ul { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 72ch; }
+.callout { border-left: 4px solid var(--warn); padding: 10px 14px; background: var(--panel); border-radius: 0 6px 6px 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+/* schematic styling */
+.sch line, .sch path { stroke: var(--line); stroke-width: 1.6; fill: none; }
+.sch .part { fill: var(--panel); stroke: var(--line); stroke-width: 1.6; }
+.sch .ic { fill: color-mix(in srgb, var(--accent) 7%, var(--panel)); stroke: var(--line); stroke-width: 1.8; }
+.sch .term { fill: color-mix(in srgb, var(--accent) 25%, var(--panel)); stroke: var(--line); stroke-width: 1.6; }
+.sch .remote { fill: none; stroke: var(--muted); stroke-dasharray: 5 4; stroke-width: 1.2; }
+.sch .cable { stroke: var(--muted); stroke-dasharray: 2 3; }
+.sch .thin { stroke-width: 1.1; }
+.sch .plate { stroke-width: 3; }
+.sch .dot { fill: var(--line); }
+.sch text { fill: var(--ink); font-family: var(--font-body); font-size: 13px; }
+.sch .ref { font-weight: 600; font-size: 13px; }
+.sch .val { fill: var(--muted); font-size: 12px; }
+.sch .pin { font-family: var(--font-mono); font-size: 11px; fill: var(--muted); }
+.sch .net { font-family: var(--font-mono); font-size: 11px; fill: var(--accent); }
+.sch .note { fill: var(--muted); font-size: 12px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Pool Heater Probe Override</h1>
+  <p>The heater's own probe now sits on the pool wall and is read by an ESP32-S3-Zero. The ESP32 decides when to heat and hands the heater controller one of two fake probe readings to turn it on or off. This page records the circuit, layout, wiring, calibration, installation and firmware as built.</p>
+  <div class="meta"><span class="chip">Rev E: as built</span><span class="chip">Installed Nov 12</span><span class="chip">Firmware v1.7.1</span><span class="chip">Perfboard 18 × 24 holes</span></div>
+</header>
+
+<section>
+  <h2><span class="no">01</span>How it switches the heater</h2>
+  <p>The probe is an NTC thermistor: lower resistance means hotter. The firmware closes exactly one PhotoMOS relay at a time, which puts either the HOT or the COLD resistor across the heater controller's probe input. The heater's own setpoint is set to 70 °F, midway between the two fake readings, and left there.</p>
+  <div class="tablewrap panel"><table>
+    <thead><tr><th>K1 (GP6)</th><th>K2 (GP5)</th><th>Controller sees</th><th>Heater</th></tr></thead>
+    <tbody>
+      <tr><td>on</td><td>off</td><td>HOT resistor R5, 3.83 kΩ: heater shows 89 °F</td><td><span class="state s-off">off / satisfied</span></td></tr>
+      <tr><td>off</td><td>on</td><td>COLD resistor R7, 9.01 kΩ: heater shows 50 °F</td><td><span class="state s-on">calls for heat</span></td></tr>
+      <tr><td>off</td><td>off</td><td>open circuit (board unpowered): heater shows P1 after a few seconds</td><td><span class="state s-safe">sensor fault, stops</span></td></tr>
+      <tr><td>on</td><td>on</td><td>both in parallel, reads even hotter (only during changeover)</td><td><span class="state s-off">off</span></td></tr>
+    </tbody></table></div>
+  <p class="muted">Changeover rule for the firmware: turn the new relay on, wait about 50 ms, then turn the old one off. The controller never sees an open sensor during normal switching.</p>
+</section>
+
+<section>
+  <h2><span class="no">02</span>Schematic</h2>
+  <div class="panel draw"><svg viewBox="20 60 880 475" xmlns="http://www.w3.org/2000/svg" class="sch" role="img" aria-label="Schematic"><rect x="40" y="70" width="140" height="380" class="ic"/><text x="110" y="250" class="ref" text-anchor="middle">U1</text><text x="110" y="268" class="val" text-anchor="middle">ESP32-S3-Zero</text><text x="110" y="284" class="note" text-anchor="middle">powered by USB-C 5 V</text><text x="172" y="114" class="pin" text-anchor="end">GP6</text><text x="172" y="224" class="pin" text-anchor="end">GP5</text><text x="172" y="344" class="pin" text-anchor="end">3V3</text><text x="172" y="424" class="pin" text-anchor="end">GP1 (ADC)</text><text x="110" y="444" class="pin" text-anchor="middle">GND</text><line x1="110" y1="450" x2="110" y2="470"/><line x1="110" y1="470" x2="110" y2="478"/><line x1="101" y1="478" x2="119" y2="478"/><line x1="104" y1="482" x2="116" y2="482"/><line x1="107" y1="486" x2="113" y2="486"/><line x1="180" y1="110" x2="222.0" y2="110"/><line x1="258.0" y1="110" x2="300" y2="110"/><rect x="222.0" y="104" width="36" height="12" class="part"/><text x="240.0" y="99" class="ref" text-anchor="middle">R3</text><text x="240.0" y="132" class="val" text-anchor="middle">238 Ω</text><rect x="300" y="90" width="110" height="80" class="ic"/><text x="355" y="82" class="ref" text-anchor="middle">K1 AQV252G — HOT path</text><line x1="300" y1="110" x2="330" y2="110"/><line x1="330" y1="110" x2="330" y2="122"/><path d="M322,122 L338,122 L330,136 Z" class="part"/><line x1="322" y1="136" x2="338" y2="136"/><line x1="330" y1="136" x2="330" y2="150"/><line x1="330" y1="150" x2="300" y2="150"/><path d="M344,126 l10,0 m-4,-4 l4,4 l-4,4" class="thin"/><line x1="410" y1="110" x2="380" y2="110"/><line x1="380" y1="110" x2="380" y2="120"/><line x1="380" y1="140" x2="370" y2="122"/><line x1="380" y1="140" x2="380" y2="150"/><line x1="380" y1="150" x2="410" y2="150"/><text x="306" y="106" class="pin">1</text><text x="306" y="165" class="pin">2</text><text x="397" y="106" class="pin">6</text><text x="397" y="165" class="pin">4</text><line x1="300" y1="150" x2="290" y2="150"/><line x1="290" y1="150" x2="290" y2="158"/><line x1="281" y1="158" x2="299" y2="158"/><line x1="284" y1="162" x2="296" y2="162"/><line x1="287" y1="166" x2="293" y2="166"/><line x1="180" y1="220" x2="222.0" y2="220"/><line x1="258.0" y1="220" x2="300" y2="220"/><rect x="222.0" y="214" width="36" height="12" class="part"/><text x="240.0" y="209" class="ref" text-anchor="middle">R4</text><text x="240.0" y="242" class="val" text-anchor="middle">243 Ω</text><rect x="300" y="200" width="110" height="80" class="ic"/><text x="355" y="192" class="ref" text-anchor="middle">K2 AQV252G — COLD path</text><line x1="300" y1="220" x2="330" y2="220"/><line x1="330" y1="220" x2="330" y2="232"/><path d="M322,232 L338,232 L330,246 Z" class="part"/><line x1="322" y1="246" x2="338" y2="246"/><line x1="330" y1="246" x2="330" y2="260"/><line x1="330" y1="260" x2="300" y2="260"/><path d="M344,236 l10,0 m-4,-4 l4,4 l-4,4" class="thin"/><line x1="410" y1="220" x2="380" y2="220"/><line x1="380" y1="220" x2="380" y2="230"/><line x1="380" y1="250" x2="370" y2="232"/><line x1="380" y1="250" x2="380" y2="260"/><line x1="380" y1="260" x2="410" y2="260"/><text x="306" y="216" class="pin">1</text><text x="306" y="275" class="pin">2</text><text x="397" y="216" class="pin">6</text><text x="397" y="275" class="pin">4</text><line x1="300" y1="260" x2="290" y2="260"/><line x1="290" y1="260" x2="290" y2="268"/><line x1="281" y1="268" x2="299" y2="268"/><line x1="284" y1="272" x2="296" y2="272"/><line x1="287" y1="276" x2="293" y2="276"/><line x1="410" y1="110" x2="447.0" y2="110"/><line x1="483.0" y1="110" x2="520" y2="110"/><rect x="447.0" y="104" width="36" height="12" class="part"/><text x="465.0" y="99" class="ref" text-anchor="middle">R5</text><text x="465.0" y="132" class="val" text-anchor="middle">HOT 3.83k</text><line x1="520" y1="110" x2="562.0" y2="110"/><line x1="598.0" y1="110" x2="640" y2="110"/><rect x="562.0" y="104" width="36" height="12" class="part"/><text x="580.0" y="99" class="ref" text-anchor="middle">R6</text><text x="580.0" y="132" class="val" text-anchor="middle">link</text><line x1="410" y1="220" x2="447.0" y2="220"/><line x1="483.0" y1="220" x2="520" y2="220"/><rect x="447.0" y="214" width="36" height="12" class="part"/><text x="465.0" y="209" class="ref" text-anchor="middle">R7</text><text x="465.0" y="242" class="val" text-anchor="middle">COLD 9.0k</text><line x1="520" y1="220" x2="562.0" y2="220"/><line x1="598.0" y1="220" x2="640" y2="220"/><rect x="562.0" y="214" width="36" height="12" class="part"/><text x="580.0" y="209" class="ref" text-anchor="middle">R8</text><text x="580.0" y="242" class="val" text-anchor="middle">link</text><line x1="640" y1="110" x2="700" y2="110"/><line x1="640" y1="220" x2="700" y2="220"/><line x1="700" y1="110" x2="700" y2="300"/><circle cx="700" cy="220" r="3" class="dot"/><line x1="410" y1="150" x2="670" y2="150"/><line x1="410" y1="260" x2="670" y2="260"/><line x1="670" y1="150" x2="670" y2="330"/><circle cx="670" cy="260" r="3" class="dot"/><line x1="670" y1="330" x2="770" y2="330"/><line x1="700" y1="300" x2="770" y2="300"/><rect x="770" y="285" width="26" height="60" class="term"/><text x="783" y="278" class="ref" text-anchor="middle">J2</text><text x="764" y="296" class="pin" text-anchor="end">2</text><text x="764" y="326" class="pin" text-anchor="end">1</text><line x1="796" y1="300" x2="830" y2="300" class="cable"/><line x1="796" y1="330" x2="830" y2="330" class="cable"/><text x="836" y="312" class="note">to heater</text><text x="836" y="327" class="note">controller</text><text x="836" y="342" class="note">probe input</text><text x="676" y="345" class="net">HEAT_A</text><text x="706" y="290" class="net">HEAT_B</text><line x1="180" y1="340" x2="300" y2="340"/><line x1="300" y1="340" x2="300" y2="362.0"/><line x1="300" y1="398.0" x2="300" y2="420"/><rect x="294" y="362.0" width="12" height="36" class="part"/><text x="312" y="377.0" class="ref">R1</text><text x="312" y="392.0" class="val">6.6k (2 in series)</text><line x1="300" y1="420" x2="560" y2="420"/><circle cx="300" cy="420" r="3" class="dot"/><line x1="200" y1="420" x2="232.0" y2="420"/><line x1="268.0" y1="420" x2="300" y2="420"/><rect x="232.0" y="414" width="36" height="12" class="part"/><text x="250.0" y="409" class="ref" text-anchor="middle">R2</text><text x="250.0" y="442" class="val" text-anchor="middle">1.1k</text><line x1="180" y1="420" x2="200" y2="420"/><circle cx="200" cy="420" r="3" class="dot"/><line x1="200" y1="420" x2="200" y2="452"/><line x1="188" y1="452" x2="212" y2="452" class="plate"/><line x1="188" y1="460" x2="212" y2="460" class="plate"/><line x1="200" y1="460" x2="200" y2="475"/><line x1="200" y1="475" x2="200" y2="483"/><line x1="191" y1="483" x2="209" y2="483"/><line x1="194" y1="487" x2="206" y2="487"/><line x1="197" y1="491" x2="203" y2="491"/><text x="218" y="462" class="ref">C1</text><text x="218" y="476" class="val">100 nF</text><text x="380" y="414" class="net">PROBE</text><rect x="560" y="405" width="26" height="60" class="term"/><text x="573" y="398" class="ref" text-anchor="middle">J1</text><text x="554" y="416" class="pin" text-anchor="end">1</text><text x="554" y="461" class="pin" text-anchor="end">2</text><line x1="530" y1="450" x2="560" y2="450"/><line x1="530" y1="450" x2="530" y2="470"/><line x1="530" y1="470" x2="530" y2="478"/><line x1="521" y1="478" x2="539" y2="478"/><line x1="524" y1="482" x2="536" y2="482"/><line x1="527" y1="486" x2="533" y2="486"/><line x1="586" y1="420" x2="680" y2="420" class="cable"/><line x1="586" y1="450" x2="680" y2="450" class="cable"/><rect x="640" y="385" width="120" height="100" rx="6" class="remote"/><line x1="680" y1="420" x2="700" y2="420"/><line x1="680" y1="450" x2="700" y2="450"/><line x1="700" y1="420" x2="700" y2="424"/><line x1="700" y1="446" x2="700" y2="450"/><rect x="694" y="424" width="12" height="22" class="part"/><line x1="686" y1="450" x2="714" y2="420" class="thin"/><text x="700" y="402" class="note" text-anchor="middle">heater's own probe</text><text x="700" y="476" class="note" text-anchor="middle">NTC thermistor</text><text x="230" y="520" class="note">Calibrated probe: B = 3696, 4,444 Ω at 77 °F. Heater display: HOT 3.83k shows 89 °F, COLD 9.0k shows 50 °F.</text></svg></div>
+  <p class="muted">The KiCad 9 version (same circuit, net labels instead of wires) is in the files sent in the chat. Rev C has the as-built values.</p>
+</section>
+
+<section>
+  <h2><span class="no">03</span>Perfboard layout</h2>
+  <p>Hole positions are given as <span class="rc">(column,row)</span> counted from the top-left corner of the top view, starting at 0. The bottom view is mirrored so it matches what you see with the board flipped over, but it uses the same numbers.</p>
+  <div class="panel draw"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68.96 57.72" class="pb" font-family="Arial, Helvetica, sans-serif">
+<rect x="2.73" y="6.73" width="63.5" height="48.26" rx="1.5" fill="#e9d9a6" stroke="#b49a55" stroke-width="0.3"/>
+<text x="4.0" y="5.2" font-size="3" font-weight="bold" fill="#333">TOP (component side)</text>
+<text x="5.27" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">0</text>
+<text x="17.97" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">5</text>
+<text x="30.67" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">10</text>
+<text x="43.37" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">15</text>
+<text x="56.07" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">20</text>
+<text x="2.40" y="9.77" font-size="1.4" text-anchor="end" fill="#8a7a50">0</text>
+<text x="2.40" y="22.47" font-size="1.4" text-anchor="end" fill="#8a7a50">5</text>
+<text x="2.40" y="35.17" font-size="1.4" text-anchor="end" fill="#8a7a50">10</text>
+<text x="2.40" y="47.87" font-size="1.4" text-anchor="end" fill="#8a7a50">15</text>
+<circle cx="5.27" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="52.45" r="0.5" fill="#c7b37a"/>
+<rect x="9.33" y="30.61" width="17.27" height="23.37" rx="0.6" fill="#1d3557" stroke="#0b1a2e" stroke-width="0.25" fill-opacity="0.92"/>
+<rect x="9.33" y="30.61" width="17.27" height="2.92" fill="none" stroke="#ffd166" stroke-dasharray="0.8 0.5" stroke-width="0.3"/>
+<text x="16.47" y="32.91" font-size="1.3" fill="#ffd166" text-anchor="middle">antenna end</text>
+<text x="17.97" y="42.29" font-size="2.2" fill="#fff" text-anchor="middle" font-weight="bold">U1</text>
+<text x="17.17" y="44.89" font-size="1.2" fill="#cfe" text-anchor="middle">ESP32-S3-Zero</text>
+<rect x="13.47" y="53.37" width="9" height="3.6" rx="1" fill="#aaa" stroke="#555" stroke-width="0.2"/>
+<text x="17.97" y="55.87" font-size="1.5" text-anchor="middle">USB-C</text>
+<rect x="36.39" y="9.90" width="6.35" height="8.89" rx="0.6" fill="#333" stroke="#000" stroke-width="0.25" fill-opacity="0.92"/>
+<circle cx="37.10" cy="11.71" r="0.4" fill="#fff"/>
+<text x="39.56" y="14.15" font-size="1.8" fill="#fff" text-anchor="middle" font-weight="bold">K1</text>
+<text x="39.56" y="16.15" font-size="1.2" fill="#ddd" text-anchor="middle">HOT</text>
+<rect x="36.39" y="20.06" width="6.35" height="8.89" rx="0.6" fill="#333" stroke="#000" stroke-width="0.25" fill-opacity="0.92"/>
+<circle cx="37.10" cy="21.87" r="0.4" fill="#fff"/>
+<text x="39.56" y="24.31" font-size="1.8" fill="#fff" text-anchor="middle" font-weight="bold">K2</text>
+<text x="39.56" y="26.31" font-size="1.2" fill="#ddd" text-anchor="middle">COLD</text>
+<rect x="60.39" y="39.75" width="8.13" height="10.16" rx="0.6" fill="#2a9d8f" stroke="#1b5e57" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="60.05" y="44.63" font-size="1.6" fill="#1b5e57" text-anchor="end" font-weight="bold">J1</text>
+<text x="60.05" y="46.43" font-size="1.2" fill="#1b5e57" text-anchor="end">to probe</text>
+<rect x="60.39" y="27.05" width="8.13" height="10.16" rx="0.6" fill="#2a9d8f" stroke="#1b5e57" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="60.05" y="31.93" font-size="1.6" fill="#1b5e57" text-anchor="end" font-weight="bold">J2</text>
+<text x="60.05" y="33.73" font-size="1.2" fill="#1b5e57" text-anchor="end">to heater</text>
+<rect x="26.86" y="45.34" width="2.54" height="4.06" rx="0.6" fill="#f4a261" stroke="#a0522d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="29.73" y="47.87" font-size="1.4" fill="#333">C1</text>
+<rect x="32.19" y="38.61" width="7.11" height="2.29" rx="0.6" fill="#a8dadc" stroke="#457b9d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="35.75" y="40.25" font-size="1.3" text-anchor="middle" fill="#123">R1</text>
+<rect x="32.19" y="43.69" width="7.11" height="2.29" rx="0.6" fill="#a8dadc" stroke="#457b9d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="35.75" y="45.33" font-size="1.3" text-anchor="middle" fill="#123">R2</text>
+<rect x="24.57" y="10.67" width="7.11" height="2.29" rx="0.6" fill="#a8dadc" stroke="#457b9d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="28.13" y="12.31" font-size="1.3" text-anchor="middle" fill="#123">R3</text>
+<rect x="24.57" y="20.83" width="7.11" height="2.29" rx="0.6" fill="#a8dadc" stroke="#457b9d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="28.13" y="22.47" font-size="1.3" text-anchor="middle" fill="#123">R4</text>
+<rect x="47.43" y="10.67" width="7.11" height="2.29" rx="0.6" fill="#a8dadc" stroke="#457b9d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="50.99" y="12.31" font-size="1.3" text-anchor="middle" fill="#123">R5</text>
+<rect x="60.13" y="10.67" width="2.03" height="2.29" rx="0.6" fill="#a8dadc" stroke="#457b9d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="61.15" y="12.31" font-size="1.3" text-anchor="middle" fill="#123">R6</text>
+<rect x="47.43" y="20.83" width="7.11" height="2.29" rx="0.6" fill="#a8dadc" stroke="#457b9d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="50.99" y="22.47" font-size="1.3" text-anchor="middle" fill="#123">R7</text>
+<rect x="60.13" y="20.83" width="2.03" height="2.29" rx="0.6" fill="#a8dadc" stroke="#457b9d" stroke-width="0.25" fill-opacity="0.92"/>
+<text x="61.15" y="22.47" font-size="1.3" text-anchor="middle" fill="#123">R8</text>
+<circle cx="10.35" cy="32.13" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="10.35" cy="34.67" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="10.35" cy="37.21" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="10.35" cy="39.75" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="10.35" cy="42.29" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="10.35" cy="44.83" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="10.35" cy="47.37" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="10.35" cy="49.91" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="10.35" cy="52.45" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="32.13" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="34.67" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="37.21" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="39.75" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="42.29" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="44.83" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="47.37" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="49.91" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="25.59" cy="52.45" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="35.75" cy="11.81" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="35.75" cy="14.35" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="35.75" cy="16.89" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="43.37" cy="16.89" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="43.37" cy="14.35" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="43.37" cy="11.81" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="35.75" cy="21.97" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="35.75" cy="24.51" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="35.75" cy="27.05" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="43.37" cy="27.05" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="43.37" cy="24.51" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="43.37" cy="21.97" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="23.05" cy="11.81" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="33.21" cy="11.81" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="23.05" cy="21.97" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="33.21" cy="21.97" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="45.91" cy="11.81" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="56.07" cy="11.81" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="58.61" cy="11.81" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="63.69" cy="11.81" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="45.91" cy="21.97" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="56.07" cy="21.97" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="58.61" cy="21.97" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="63.69" cy="21.97" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="30.67" cy="39.75" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="40.83" cy="39.75" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="40.83" cy="44.83" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="30.67" cy="44.83" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="28.13" cy="44.83" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="28.13" cy="49.91" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="63.69" cy="29.59" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="63.69" cy="34.67" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="63.69" cy="42.29" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<circle cx="63.69" cy="47.37" r="0.7" fill="#d9d9d9" stroke="#555" stroke-width="0.2"/>
+<text x="24.49" y="32.58" font-size="1.2" fill="#fff" text-anchor="end">GP6</text>
+<text x="24.49" y="35.12" font-size="1.2" fill="#fff" text-anchor="end">GP5</text>
+<text x="24.49" y="37.66" font-size="1.2" fill="#fff" text-anchor="end">GP4</text>
+<text x="24.49" y="40.20" font-size="1.2" fill="#fff" text-anchor="end">GP3</text>
+<text x="24.49" y="42.74" font-size="1.2" fill="#fff" text-anchor="end">GP2</text>
+<text x="24.49" y="45.28" font-size="1.2" fill="#fff" text-anchor="end">GP1</text>
+<text x="24.49" y="47.82" font-size="1.2" fill="#fff" text-anchor="end">3V3</text>
+<text x="24.49" y="50.36" font-size="1.2" fill="#fff" text-anchor="end">GND</text>
+<text x="24.49" y="52.90" font-size="1.2" fill="#fff" text-anchor="end">5V</text>
+</svg></div>
+  <div class="panel draw"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68.96 57.72" class="pb" font-family="Arial, Helvetica, sans-serif">
+<rect x="2.73" y="6.73" width="63.5" height="48.26" rx="1.5" fill="#e9d9a6" stroke="#b49a55" stroke-width="0.3"/>
+<text x="4.0" y="5.2" font-size="3" font-weight="bold" fill="#333">BOTTOM (solder side) — mirrored view</text>
+<text x="63.69" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">0</text>
+<text x="50.99" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">5</text>
+<text x="38.29" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">10</text>
+<text x="25.59" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">15</text>
+<text x="12.89" y="7.20" font-size="1.4" text-anchor="middle" fill="#8a7a50">20</text>
+<text x="2.40" y="9.77" font-size="1.4" text-anchor="end" fill="#8a7a50">0</text>
+<text x="2.40" y="22.47" font-size="1.4" text-anchor="end" fill="#8a7a50">5</text>
+<text x="2.40" y="35.17" font-size="1.4" text-anchor="end" fill="#8a7a50">10</text>
+<text x="2.40" y="47.87" font-size="1.4" text-anchor="end" fill="#8a7a50">15</text>
+<circle cx="63.69" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="63.69" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="61.15" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="58.61" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="56.07" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="53.53" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="50.99" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="48.45" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="45.91" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="43.37" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="40.83" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="38.29" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="35.75" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="33.21" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="30.67" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="28.13" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="25.59" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="23.05" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="20.51" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="17.97" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="15.43" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="12.89" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="10.35" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="7.81" cy="52.45" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="9.27" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="11.81" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="14.35" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="16.89" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="19.43" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="21.97" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="24.51" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="27.05" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="29.59" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="32.13" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="34.67" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="37.21" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="39.75" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="42.29" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="44.83" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="47.37" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="49.91" r="0.5" fill="#c7b37a"/>
+<circle cx="5.27" cy="52.45" r="0.5" fill="#c7b37a"/>
+<path d="M35.75,11.81 L33.21,11.81" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M35.75,21.97 L33.21,21.97" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M33.21,14.35 L30.67,14.35 L30.67,16.89 L30.67,19.43 L30.67,21.97 L30.67,24.51 L33.21,24.51" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M43.37,44.83 L40.83,44.83 L38.29,44.83" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M43.37,49.91 L40.83,49.91" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M28.13,39.75 L28.13,42.29 L28.13,44.83" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25.59,11.81 L23.05,11.81" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12.89,11.81 L10.35,11.81" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25.59,21.97 L23.05,21.97" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12.89,21.97 L10.35,21.97" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M5.27,11.81 L5.27,14.35 L5.27,16.89 L5.27,19.43 L5.27,21.97 L5.27,24.51 L5.27,27.05 L5.27,29.59" fill="none" stroke="#9aa3ad" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="58.61" cy="32.13" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="58.61" cy="34.67" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="58.61" cy="37.21" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="58.61" cy="39.75" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="58.61" cy="42.29" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="58.61" cy="44.83" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="58.61" cy="47.37" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="58.61" cy="49.91" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="58.61" cy="52.45" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="32.13" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="34.67" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="37.21" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="39.75" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="42.29" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="44.83" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="47.37" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="49.91" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="43.37" cy="52.45" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="33.21" cy="11.81" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="33.21" cy="14.35" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="33.21" cy="16.89" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="25.59" cy="16.89" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="25.59" cy="14.35" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="25.59" cy="11.81" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="33.21" cy="21.97" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="33.21" cy="24.51" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="33.21" cy="27.05" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="25.59" cy="27.05" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="25.59" cy="24.51" r="0.85" fill="#e2e2e2" stroke="#666" stroke-width="0.2"/>
+<circle cx="25.59" cy="21.97" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="45.91" cy="11.81" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="35.75" cy="11.81" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="45.91" cy="21.97" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="35.75" cy="21.97" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="23.05" cy="11.81" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="12.89" cy="11.81" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="10.35" cy="11.81" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="5.27" cy="11.81" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="23.05" cy="21.97" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="12.89" cy="21.97" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="10.35" cy="21.97" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="5.27" cy="21.97" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="38.29" cy="39.75" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="28.13" cy="39.75" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="28.13" cy="44.83" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="38.29" cy="44.83" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="40.83" cy="44.83" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="40.83" cy="49.91" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="5.27" cy="29.59" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="5.27" cy="34.67" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="5.27" cy="42.29" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<circle cx="5.27" cy="47.37" r="0.85" fill="#c0c6cc" stroke="#666" stroke-width="0.2"/>
+<path d="M43.37,32.13 L42.10,30.86 L42.10,15.62 L44.64,13.08 L45.91,11.81" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M43.37,32.13 L42.10,30.86 L42.10,15.62 L44.64,13.08 L45.91,11.81" fill="none" stroke="#ff7f0e" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M43.37,34.67 L44.64,33.40 L44.64,23.24 L45.91,21.97" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M43.37,34.67 L44.64,33.40 L44.64,23.24 L45.91,21.97" fill="none" stroke="#1f77b4" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M33.21,24.51 L34.48,25.78 L34.48,51.18 L39.56,51.18 L40.83,49.91" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M33.21,24.51 L34.48,25.78 L34.48,51.18 L39.56,51.18 L40.83,49.91" fill="none" stroke="#222222" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M43.37,47.37 L42.10,48.64 L37.02,48.64 L37.02,41.02 L38.29,39.75" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M43.37,47.37 L42.10,48.64 L37.02,48.64 L37.02,41.02 L38.29,39.75" fill="none" stroke="#d62728" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M28.13,44.83 L26.86,43.56 L6.54,43.56 L5.27,42.29" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M28.13,44.83 L26.86,43.56 L6.54,43.56 L5.27,42.29" fill="none" stroke="#2ca02c" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M5.27,47.37 L6.54,48.64 L6.54,52.07 L42.10,52.07 L43.37,49.91" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M5.27,47.37 L6.54,48.64 L6.54,52.07 L42.10,52.07 L43.37,49.91" fill="none" stroke="#222222" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25.59,16.89 L26.86,18.16 L26.86,25.78 L25.59,27.05" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25.59,16.89 L26.86,18.16 L26.86,25.78 L25.59,27.05" fill="none" stroke="#9467bd" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25.59,27.05 L24.32,28.32 L24.32,33.40 L6.54,33.40 L5.27,34.67" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25.59,27.05 L24.32,28.32 L24.32,33.40 L6.54,33.40 L5.27,34.67" fill="none" stroke="#9467bd" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="43.37" y="31.08" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">GP6</text>
+<text x="43.37" y="33.62" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">GP5</text>
+<text x="43.37" y="43.78" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">GP1</text>
+<text x="43.37" y="46.32" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">3V3</text>
+<text x="43.37" y="48.86" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">GND</text>
+<text x="33.21" y="10.76" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">K1.1</text>
+<text x="33.21" y="13.30" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">K1.2</text>
+<text x="25.59" y="15.84" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">K1.4</text>
+<text x="25.59" y="10.76" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">K1.6</text>
+<text x="33.21" y="20.92" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">K2.1</text>
+<text x="33.21" y="23.46" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">K2.2</text>
+<text x="25.59" y="26.00" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">K2.4</text>
+<text x="25.59" y="20.92" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">K2.6</text>
+<text x="45.91" y="10.76" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R3.1</text>
+<text x="35.75" y="10.76" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R3.2</text>
+<text x="45.91" y="20.92" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R4.1</text>
+<text x="35.75" y="20.92" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R4.2</text>
+<text x="23.05" y="10.76" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R5.1</text>
+<text x="12.89" y="10.76" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R5.2</text>
+<text x="10.35" y="10.76" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R6.1</text>
+<text x="5.27" y="10.76" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R6.2</text>
+<text x="23.05" y="20.92" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R7.1</text>
+<text x="12.89" y="20.92" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R7.2</text>
+<text x="10.35" y="20.92" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R8.1</text>
+<text x="5.27" y="20.92" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R8.2</text>
+<text x="38.29" y="38.70" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R1.1</text>
+<text x="28.13" y="38.70" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R1.2</text>
+<text x="28.13" y="43.78" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R2.1</text>
+<text x="38.29" y="43.78" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">R2.2</text>
+<text x="40.83" y="43.78" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">C1.1</text>
+<text x="40.83" y="48.86" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">C1.2</text>
+<text x="5.27" y="28.54" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">J2.2</text>
+<text x="5.27" y="33.62" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">J2.1</text>
+<text x="5.27" y="41.24" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">J1.1</text>
+<text x="5.27" y="46.32" font-size="0.95" text-anchor="middle" fill="#222" stroke="#e9d9a6" stroke-width="0.25" paint-order="stroke">J1.2</text>
+</svg></div>
+  <div class="legend"><span><span class="sw" style="background:#9aa3ad"></span>bare tinned wire / solder trail</span><span><span class="sw" style="background:#ff7f0e"></span>insulated wire (color = net)</span><span>Light grey pads = unused pins</span></div>
+  <div class="callout">
+    <h3>Module header spacing (confirmed)</h3>
+    <p>The ESP32-S3-Zero's header rows are 6 holes apart (0.6 in), measured on your board: the left header goes in column 2 and the right header in column 8. The pin labels match the GP6…5V order shown here.</p>
+  </div>
+  <ul>
+    <li><b>USB-C</b> faces the bottom edge so the power cable plugs in from outside the board. The module sits on female headers, so you can pull it and program it by USB if an over-the-air update ever goes wrong.</li>
+    <li><b>Antenna end</b> (top of the module) is kept clear of parts and wiring on both sides. Don't mount the board with that end against the Pi or a metal surface.</li>
+    <li><b>Relays go in sockets.</b> The dot (pin 1) is top-left on both.</li>
+    <li><b>Terminal blocks</b> face the right edge so wires come straight in from the box's cable gland.</li>
+    <li><b>R1 is two resistors in series, both standing up:</b> R1a in (10,12)–(11,12), R1b in (13,12)–(14,12), joined by a bare link (11,12)→(12,12)→(13,12) on the bottom. The ends are where the drawing shows R1.</li>
+    <li><b>R6 and R8</b> are plain wire links, 2 holes apart. If a value ever needs trimming, a resistor fits there mounted standing up.</li>
+    <li><b>J1 and J2</b> sit on the last column, so their screw side hangs slightly past the board edge. That is intended: wires go straight in from the side.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">04</span>Wiring lists (bottom side)</h2>
+  <div class="two">
+    <div class="panel tablewrap"><h3>Bare links</h3><table><thead><tr><th>Net</th><th>From</th><th>To</th><th class="num">Holes</th></tr></thead><tbody><tr><td><code>LED_HOT</code></td><td>R3 pin 2 <span class='rc'>(11,1)</span></td><td>K1 pin 1 <span class='rc'>(12,1)</span></td><td class='num'>1</td></tr><tr><td><code>LED_COLD</code></td><td>R4 pin 2 <span class='rc'>(11,5)</span></td><td>K2 pin 1 <span class='rc'>(12,5)</span></td><td class='num'>1</td></tr><tr><td><code>GND</code></td><td>K1 pin 2 <span class='rc'>(12,2)</span></td><td>K2 pin 2 <span class='rc'>(12,6)</span></td><td class='num'>6</td></tr><tr><td><code>ADC_GP1</code></td><td>U1 GP1 <span class='rc'>(8,14)</span></td><td>R2 pin 2 <span class='rc'>(10,14)</span></td><td class='num'>2</td></tr><tr><td><code>GND</code></td><td>U1 GND <span class='rc'>(8,16)</span></td><td>C1 pin 2 <span class='rc'>(9,16)</span></td><td class='num'>1</td></tr><tr><td><code>PROBE</code></td><td>R1 pin 2 <span class='rc'>(14,12)</span></td><td>R2 pin 1 <span class='rc'>(14,14)</span></td><td class='num'>2</td></tr><tr><td><code>HOT_MID</code></td><td>K1 pin 6 <span class='rc'>(15,1)</span></td><td>R5 pin 1 <span class='rc'>(16,1)</span></td><td class='num'>1</td></tr><tr><td><code>HOT_TRIM</code></td><td>R5 pin 2 <span class='rc'>(20,1)</span></td><td>R6 pin 1 <span class='rc'>(21,1)</span></td><td class='num'>1</td></tr><tr><td><code>COLD_MID</code></td><td>K2 pin 6 <span class='rc'>(15,5)</span></td><td>R7 pin 1 <span class='rc'>(16,5)</span></td><td class='num'>1</td></tr><tr><td><code>COLD_TRIM</code></td><td>R7 pin 2 <span class='rc'>(20,5)</span></td><td>R8 pin 1 <span class='rc'>(21,5)</span></td><td class='num'>1</td></tr><tr><td><code>HEAT_B</code></td><td>R6 pin 2 <span class='rc'>(23,1)</span></td><td>J2 pin 2 <span class='rc'>(23,8)</span></td><td class='num'>7</td></tr></tbody></table></div>
+    <div class="panel tablewrap"><h3>Insulated wires</h3><table><thead><tr><th>Net</th><th>From</th><th>To</th></tr></thead><tbody><tr><td><span class='sw' style='background:#ff7f0e'></span><code>HOT_EN_GP6</code></td><td>U1 GP6 <span class='rc'>(8,9)</span></td><td>R3 pin 1 <span class='rc'>(7,1)</span></td></tr><tr><td><span class='sw' style='background:#1f77b4'></span><code>COLD_EN_GP5</code></td><td>U1 GP5 <span class='rc'>(8,10)</span></td><td>R4 pin 1 <span class='rc'>(7,5)</span></td></tr><tr><td><span class='sw' style='background:#222222'></span><code>GND</code></td><td>K2 pin 2 <span class='rc'>(12,6)</span></td><td>C1 pin 2 <span class='rc'>(9,16)</span></td></tr><tr><td><span class='sw' style='background:#d62728'></span><code>+3V3</code></td><td>U1 3V3 <span class='rc'>(8,15)</span></td><td>R1 pin 1 <span class='rc'>(10,12)</span></td></tr><tr><td><span class='sw' style='background:#2ca02c'></span><code>PROBE</code></td><td>R2 pin 1 <span class='rc'>(14,14)</span></td><td>J1 pin 1 <span class='rc'>(23,13)</span></td></tr><tr><td><span class='sw' style='background:#222222'></span><code>GND</code></td><td>J1 pin 2 <span class='rc'>(23,15)</span></td><td>U1 GND <span class='rc'>(8,16)</span></td></tr><tr><td><span class='sw' style='background:#9467bd'></span><code>HEAT_A</code></td><td>K1 pin 4 <span class='rc'>(15,3)</span></td><td>K2 pin 4 <span class='rc'>(15,7)</span></td></tr><tr><td><span class='sw' style='background:#9467bd'></span><code>HEAT_A</code></td><td>K2 pin 4 <span class='rc'>(15,7)</span></td><td>J2 pin 1 <span class='rc'>(23,10)</span></td></tr></tbody></table></div>
+  </div>
+  <p class="muted">Bare links run straight through neighboring holes. Solder each hole along the way. The GND link runs under the two relay sockets, between their pin rows.</p>
+</section>
+
+<section>
+  <h2><span class="no">05</span>Pin assignments</h2>
+  <div class="panel tablewrap"><table>
+    <thead><tr><th>ESP32-S3-Zero pin</th><th>Use</th><th>Why this pin</th></tr></thead>
+    <tbody>
+      <tr><td><code>GP1</code></td><td>Probe ADC input</td><td>ADC1 channel, which keeps working while Wi-Fi is on</td></tr>
+      <tr><td><code>GP6</code></td><td>K1 HOT relay (heater off)</td><td>Ordinary GPIO, not a boot strapping pin</td></tr>
+      <tr><td><code>GP5</code></td><td>K2 COLD relay (heater on)</td><td>Ordinary GPIO, not a boot strapping pin</td></tr>
+      <tr><td><code>3V3</code></td><td>Probe divider supply</td><td>Same rail as the ADC reference</td></tr>
+      <tr><td><code>GPIO21</code></td><td>Onboard RGB LED: status</td><td>Already wired on the module</td></tr>
+    </tbody></table></div>
+  <p class="muted">No pull-down resistors are needed on GP5/GP6. While the chip boots, its pins float, and a floating pin can't push the 0.5–3 mA the relay LEDs need to switch on.</p>
+</section>
+
+<section>
+  <h2><span class="no">06</span>Parts list</h2>
+  <div class="panel tablewrap"><table><thead><tr><th class="num">Qty</th><th>Ref</th><th>Part</th><th>Notes</th></tr></thead><tbody><tr><td class='num'>1</td><td>U1</td><td>Waveshare ESP32-S3-Zero (ESP32-S3FH4R2)</td><td class='muted'>The board you ordered</td></tr><tr><td class='num'>2</td><td>—</td><td>1×9 female header, 2.54 mm</td><td class='muted'>Socket for U1, so it can be pulled for USB recovery</td></tr><tr><td class='num'>2</td><td>K1, K2</td><td>Panasonic AQV252G PhotoMOS, DIP-6</td><td class='muted'>You have these</td></tr><tr><td class='num'>2</td><td>—</td><td>DIP-6 IC socket (or one DIP-8 socket cut)</td><td class='muted'>Lets you swap a relay without desoldering</td></tr><tr><td class='num'>2</td><td>R1</td><td>two resistors in series, 6.6 kΩ total (measured)</td><td class='muted'>Mounted standing up, see section 03</td></tr><tr><td class='num'>1</td><td>R2</td><td>1.098 kΩ (measured)</td><td class='muted'>Value not critical</td></tr><tr><td class='num'>2</td><td>R3, R4</td><td>238 Ω and 243 Ω (measured)</td><td class='muted'>≈9 mA relay LED current</td></tr><tr><td class='num'>1</td><td>R5</td><td>3.832 kΩ (measured)</td><td class='muted'>HOT: heater display shows 89 °F</td></tr><tr><td class='num'>1</td><td>R7</td><td>8.99 kΩ (measured)</td><td class='muted'>COLD: heater display shows 50 °F</td></tr><tr><td class='num'>2</td><td>R6, R8</td><td>wire link</td><td class='muted'>Spare trim positions if values need tweaking</td></tr><tr><td class='num'>1</td><td>C1</td><td>100 nF ceramic, 5 mm lead pitch</td><td class='muted'></td></tr><tr><td class='num'>2</td><td>J1, J2</td><td>2-way screw terminal, 5.08 mm pitch</td><td class='muted'>Pluggable type makes a bypass easy</td></tr><tr><td class='num'>1</td><td>—</td><td>Perfboard, 18 × 24 holes</td><td class='muted'>Used sideways: 24 columns × 18 rows</td></tr><tr><td class='num'>1</td><td>—</td><td>5 V USB-C power supply + cable</td><td class='muted'>Its own supply, not the Pi</td></tr><tr><td class='num'>1</td><td>—</td><td>Hook-up wire, 24–26 AWG solid; bare tinned wire</td><td class='muted'>For the wiring lists below</td></tr><tr><td class='num'>1</td><td>—</td><td>CAT-5 cable</td><td class='muted'>One pair to the probe, another pair to the heater</td></tr><tr><td class='num'>4</td><td>—</td><td>M3 nylon standoffs + screws</td><td class='muted'>Corners of the board</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">07</span>Build and test order</h2>
+  <ol>
+    <li>Solder the header sockets, the DIP sockets, J1, J2, all the resistors (with wire links in R6 and R8) and C1. Leave the module and relays out.</li>
+    <li>Fit the bare links and insulated wires from section 04. With a meter, check continuity on each net, and check there is <b>no</b> short between 3V3, GND, PROBE and GP1.</li>
+    <li>Plug in the module only, power it by USB, and load the first sketch (with over-the-air updates) at your desk.</li>
+    <li>Put a 4.7k resistor in J1 instead of the probe. The web page should read about 74 °F. Try other resistors to watch the reading move.</li>
+    <li>Insert K1 and K2. Put a meter set to resistance across J2. Switching HOT, COLD and off from the web page should read your HOT value, your COLD value and open circuit.</li>
+    <li>Wire it to the heater with the heater's power off.</li>
+  </ol>
+  <div class="callout"><p><b>Bypass:</b> if you use pluggable terminal blocks, you can return the heater to stock in seconds. Unplug both, and join the probe wires straight to the heater wires with a lever connector.</p></div>
+</section>
+
+<section>
+  <h2><span class="no">08</span>Calibration record</h2>
+  <div class="panel tablewrap"><table>
+    <thead><tr><th>Point</th><th>Probe</th><th>Temperature</th><th>Reference</th></tr></thead>
+    <tbody>
+      <tr><td>Ice bath</td><td style="white-space:nowrap">13,820 Ω</td><td>32.0 °F</td><td>packed crushed ice and water</td></tr>
+      <tr><td>Warm water</td><td style="white-space:nowrap">2,890 Ω</td><td>96.3 °F</td><td>fever thermometer</td></tr>
+    </tbody></table></div>
+  <ul>
+    <li><b>Resulting curve:</b> B = 3696, 4,444 Ω at 77 °F. Built into the firmware as the default since v1.2, so a fresh or wiped chip reads correctly without recalibrating.</li>
+    <li><b>Installed offset:</b> about +3 °F, set with <b>Calibrate… → Match reading</b> against the bulb pool thermometer, after the probe had been on the wall for a while. Redo it if a fresh chip goes in.</li>
+    <li><b>Lesson learned:</b> the multimeter's temperature probe reads about 9–10 °F high (41.7 °F in an ice bath). Use an ice bath, the fever thermometer (94–106 °F only) or the bulb thermometer as references instead.</li>
+    <li>The heater controller expects the same type of probe. The earlier "heater reads 10 °F cold" idea came from the meter's error, not the heater.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">09</span>Installation (as built)</h2>
+  <ul>
+    <li><b>Probe:</b> on the outside of the steel pool wall, behind the 6 in insulation, about mid-depth and away from the return jet. Silicone heat-sink compound, then foam tape, insulation pushed back over it, wire taped down for strain relief.</li>
+    <li><b>Wiring:</b> CAT-5. One pair from J1 to the probe, a separate pair from J2 to the heater controller's probe input. Splices soldered and sealed.</li>
+    <li><b>Heater:</b> setpoint fixed at <b>70 °F</b>. Its display now shows 89 °F (ESP32 says off) or 50 °F (ESP32 says heat), not the pool temperature. It still won't run without water flow.</li>
+    <li><b>Box:</b> shares the plastic box with the Raspberry Pi, powered by its own 5 V USB-C supply.</li>
+    <li><b>Wi-Fi:</b> connected through the pool-side extender (MAC address confirmed) at about -60 dBm. The heat pump's electrical noise is why the house router alone wasn't reliable out there.</li>
+    <li><b>Fail-safe tested:</b> with the sensor input open, the heater shows P1 after a few seconds and stops.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">10</span>Firmware v1.7.1</h2>
+  <p>Web page at <code>http://poolheater.local</code> (or the IP address on its Wi-Fi line), from a phone, tablet, PC or the Pi's desktop icon.</p>
+  <div class="panel tablewrap"><table>
+    <thead><tr><th>Setting</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>Setpoint °F</td><td>The heater stops after every reading has been at or above this for the confirm time.</td></tr>
+      <tr><td>Neg Differential °F</td><td>The heater restarts after every reading has been at or below setpoint minus this for the confirm time.</td></tr>
+      <tr><td>Confirm time (min)</td><td>How long readings must hold before switching. Any reading on the wrong side restarts the timer.</td></tr>
+      <tr><td>Min. off time (min)</td><td>Compressor protection: the shortest time between stopping and restarting.</td></tr>
+      <tr><td>Heating time window</td><td>Optional schedule. Ignored until the clock is set from the internet after a restart.</td></tr>
+    </tbody></table></div>
+  <ul>
+    <li><b>Readings</b> are taken 4 times a second and compared at 0.1 °F, as shown, with no smoothing.</li>
+    <li><b>Temperature history:</b> every 5 minutes the board saves the average, low, high and percentage of time heating to its spare flash memory. That's about 14 months (417 days); when it's full, the oldest records are replaced. History survives restarts, power cuts and firmware updates.</li>
+    <li><b>History graph:</b> the mouse wheel zooms (1 hour up to everything stored), dragging or the slider moves through time, and buttons jump to Day, Week, Month, 3 months, Year or All. Hover for details.</li>
+    <li><b>Chip speed:</b> 80 MHz (since v1.6), the slowest speed that keeps Wi-Fi, for less power and heat.</li>
+    <li><b>Force on</b> goes back to Auto after 2 hours and after any restart. <b>Force off</b> is remembered.</li>
+    <li><b>Safety:</b> a probe fault or water above 104 °F holds the heater off. A watchdog restarts the chip within 10 s if the program freezes, and it starts with the heater off.</li>
+    <li><b>Calibration and Wi-Fi changes</b> are behind buttons with "Are you sure?" steps. New Wi-Fi lines in the code always take effect after an upload, and the board falls back to them if saved details stop working.</li>
+    <li><b>Updates:</b> from the PC over Wi-Fi with the Arduino IDE (Tools → Port → poolheater). Board: ESP32S3 Dev Module, USB CDC On Boot enabled, Partition <b>Default 4MB with spiffs</b> (holds the history), Erase All Flash <b>disabled</b> (enabling it wipes settings and history). Wi-Fi and update passwords live in <code>secrets.h</code> next to <code>PoolHeater.ino</code> (copied from <code>secrets.example.h</code>), so a new version only replaces <code>PoolHeater.ino</code>. Keep only one .ino file in the sketch folder: the IDE combines every .ino file in that folder, so old copies cause "redefinition" errors. Older versions are kept in the GitHub history instead.</li>
+    <li><b>Spare chip:</b> keep the second ESP32-S3-Zero loaded with the same version. To swap: plug it in, enter the settings and redo Match reading.</li>
+  </ul>
+  <div class="panel tablewrap"><table>
+    <thead><tr><th>Board LED</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>green</td><td>idle, connected</td></tr><tr><td>orange</td><td>heating</td></tr>
+      <tr><td>blinking red</td><td>probe fault, heater held off</td></tr><tr><td>blinking purple</td><td>no Wi-Fi (still controlling the heater)</td></tr>
+      <tr><td>blue pulse</td><td>setup network PoolHeater-Setup open (password poolheater, http://192.168.4.1)</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">11</span>Version history</h2>
+  <div class="panel tablewrap"><table>
+    <thead><tr><th>Version</th><th>Changes</th></tr></thead>
+    <tbody>
+      <tr><td>v1.7.1</td><td>Passwords moved to secrets.h, kept out of GitHub.</td></tr>
+      <tr><td>v1.7</td><td>About 14 months of 5-minute history in flash; zoomable, scrollable history graph.</td></tr>
+      <tr><td>v1.6</td><td>Chip runs at 80 MHz. <span class="muted">(Done: was the to-do item.)</span></td></tr>
+      <tr><td>v1.5</td><td>Setpoint / Neg Differential / Confirm time control; no smoothing.</td></tr>
+      <tr><td>v1.4</td><td>Wi-Fi safeguards; LED colors fixed; Force on returns to Auto.</td></tr>
+      <tr><td>v1.3</td><td>Joins the strongest access point; watchdog; restart cause logged.</td></tr>
+      <tr><td>v1.2</td><td>Calibrated curve built in; calibration behind a confirm button.</td></tr>
+      <tr><td>v1.0–1.1</td><td>First release; 1-second page updates.</td></tr>
+    </tbody></table></div>
+</section>
+</main>
+</body>
+</html>
